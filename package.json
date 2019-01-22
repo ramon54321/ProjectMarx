@@ -1,0 +1,11 @@
+{
+  "scripts": {
+    "build": "rm -rf dist && rm -rf js && tsc && webpack"
+  },
+  "devDependencies": {
+    "chart.js": "^2.7.3",
+    "smoothie": "^1.35.0",
+    "webpack": "^4.28.4",
+    "webpack-cli": "^3.2.1"
+  }
+}
