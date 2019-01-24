@@ -1,7 +1,7 @@
 import { Chart as _Chart } from 'chart.js'
 declare var Chart: typeof _Chart
 
-import { World, Commodities } from './index'
+import { World, Commodities, COMMODITIES } from './index'
 
 const tickRange: number[] = []
 for (let i = 0; i < 100; i++) {
@@ -119,7 +119,58 @@ export class Renderer {
       }
     })
   }
+
   tick() {
+    this.tickInfo()
+    this.tickCharts()
+  }
+  
+  tickInfo() {
+    const tables: string[] = []
+
+    tables.push(`
+      <table>
+        <tr>
+          <th>Commodity</th>
+          <th>Price</th>
+          <th>Bid</th>
+          <th>Ask</th>
+        </tr>
+        ${COMMODITIES.map(commodity => `
+        <tr>
+          <td>${commodity}</td>
+          <td>${this.world.auctionHouse.marketAveragePrice[commodity].toFixed(2)}</td>
+          <td>${this.world.auctionHouse.marketAverageBid[commodity].toFixed(2)}</td>
+          <td>${this.world.auctionHouse.marketAverageAsk[commodity].toFixed(2)}</td>
+        </tr>
+        `).join("")}
+      </table>
+    `)
+
+    tables.push(`
+      <table>
+        <tr>
+          <th>Agent</th>
+          <th>Profession</th>
+          <th>Age</th>
+          <th>Currency</th>
+        </tr>
+        ${this.world.agents.map(agent => `
+        <tr>
+          <td>${agent.id}</td>
+          <td>${agent.type}</td>
+          <td>${agent.age}</td>
+          <td>${agent.currency.toFixed(2)}</td>
+        </tr>
+        `).join("")}
+      </table>
+    `)
+
+    const infoElement: HTMLElement = document.getElementById("info")
+    infoElement.innerHTML = tables.join("")
+  }
+
+  tickCharts() {
     // Push new data
     this.historyAvgBid.push(JSON.parse(JSON.stringify(this.world.auctionHouse.marketAverageBid)))
     this.historyAvgAsk.push(JSON.parse(JSON.stringify(this.world.auctionHouse.marketAverageAsk)))
@@ -141,4 +192,6 @@ export class Renderer {
     this.chart.data.datasets[5].data.push(this.historyAvgAsk[this.historyAvgAsk.length-1]["iron"])
     this.chart.update()
   }
+
+
 }

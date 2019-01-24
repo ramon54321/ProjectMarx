@@ -27,7 +27,7 @@ else if (profitFactor < 0) {
 }
 
 // How many times of ideal do we have in inventory: Poisitive when should bid, negative when should ask
-inventoryFactor = (idealInventory - inventory) / 10
+inventoryFactor = (idealInventory - inventory) / idealInventory
 
 // Balance of opinionPrice to marketPrice: -1 when marketPrice is double the opinionPrice, 0 when same, 1 when marketPrice is 0
 marketFactor = (opinionPrice - marketPrice) / opinionPrice
@@ -70,3 +70,105 @@ if (processCommodity) {
 
 
 
+
+
+
+
+tickCount++
+tickPopulation
+agents.tickFavorability
+agents.tickProduction
+agents.tickOffers
+agents.tickTax
+auctionHouse.tickMarket
+renderer.tick
+
+
+
+
+
+
+
+
+
+tickTax(world: World) {
+  this.currency -= 2
+  world.reserveBank += 2
+}
+
+produce(world: World) {
+  
+}
+calculateDesired(auctionHouse: AuctionHouse) {
+  
+}
+placeOffers(auctionHouse: AuctionHouse) {
+  
+}
+accept(offerResolution: OfferResolution) {
+  
+}
+reject(offer: Offer) {
+  
+}
+
+this.tickCount++
+    this.spawn()
+    this.agents.forEach(agent => agent.produce(this))
+    this.agents.forEach(agent => agent.calculateDesired(this.auctionHouse))
+    this.agents.forEach(agent => agent.placeOffers(this.auctionHouse))
+    this.auctionHouse.calculateMarketAverages()
+    this.calculateMarketData()
+    this.renderer.tick()
+    this.updateUI()
+    this.updateCharts()
+    this.auctionHouse.resolveOffers()
+    this.agents.forEach(agent => agent.tickTax(this))
+    this.agents.forEach(agent => {
+      if (agent.currency <= 0) {
+        const index = this.agents.indexOf(agent);
+        if (index > -1) {
+          this.agents.splice(index, 1)
+          // const professionString = PROFESSIONS_STRING.reduce((best, proStr) => {
+          //   const avgCurrency = this.totalCurrency[proStr] / this.agentTypeCount[proStr]
+          //   if (avgCurrency > best.currency) {
+          //     return {
+          //       currency: avgCurrency,
+          //       proStr
+          //     }
+          //   } else {
+          //     return best
+          //   }
+          // }, {
+          //   currency: 0,
+          //   proStr: ""
+          // }).proStr
+          // if (Math.random() < 0.5) {
+          //   this.agents.unshift(new PROFESSIONS[PROFESSIONS_STRING.indexOf(professionString)](this.auctionHouse))
+          // }
+          this.agents.unshift(new PROFESSIONS[Math.floor(Math.random() * PROFESSIONS.length)](this.auctionHouse))
+        } else {
+          console.log("Cant find agent in list")
+        }
+      }
+
+
+
+
+      import { Maybe } from 'tsmonad'
+
+      interface Person {
+        age: Maybe<number>
+      }
+      
+      const bob: Person = {
+        age: Maybe.just(21),
+      }
+      
+      const rideStatus = bob.age
+        .caseOf({
+          just: age => age <= 15 ? "Free Pass" : "Normal Fare",
+          nothing: () => "Unknown",
+        })
+      
+      console.log(rideStatus)
