@@ -25,16 +25,20 @@ export class AuctionHouse {
   marketAverageBid: Commodities
   marketAverageAsk: Commodities
 
+  marketDemand: Commodities
+
   constructor(world: World) {
     this.world = world
     this.marketAveragePrice = new Commodities()
     this.marketAverageBid = new Commodities()
     this.marketAverageAsk = new Commodities()
+    this.marketDemand = new Commodities()
     for (const commodity of COMMODITIES) {
       this.bids[commodity] = []
       this.asks[commodity] = []
       this.marketAverageBid[commodity] = 1
       this.marketAverageAsk[commodity] = 1
+      this.marketDemand[commodity] = 0
     }
   }
 
@@ -49,32 +53,33 @@ export class AuctionHouse {
     }
     for (const commodity of COMMODITIES) {
       this.marketAveragePrice[commodity] = average(this.marketAverageBid[commodity], this.marketAverageAsk[commodity])
+      this.marketDemand[commodity] = this.world.agents.reduce((demand, agent) => demand + agent.inventoryFactor[commodity], 0)
     }
   }
 
-  bid(agent: Agent, commodity: string, price: number, atMost: number) {
+  bid(agent: Agent, commodity: string, price: number, count: number) {
     this.bids[commodity].push({
       type: "bid",
       status: "pending",
       agent: agent,
       commodity: commodity,
       price: price,
-      count: atMost,
+      count: count,
     })
   }
 
-  ask(agent: Agent, commodity: string, price: number, atLeast: number) {
+  ask(agent: Agent, commodity: string, price: number, count: number) {
     this.asks[commodity].push({
       type: "ask",
       status: "pending",
       agent: agent,
       commodity: commodity,
       price: price,
-      count: atLeast,
+      count: count,
     })
   }
 
-  resolveOffers() {
+  tickResolveOffers() {
     for (const commodity of COMMODITIES) {
       // Sort bids from highest to lowest price
       this.bids[commodity].sort((a, b) => b.price - a.price)
@@ -86,16 +91,27 @@ export class AuctionHouse {
     const acceptedOffers: Offer[] = []
     for (const commodity of COMMODITIES) {
       while (this.bids[commodity].length != 0 && this.asks[commodity].length != 0) {
-        const bid = this.bids[commodity][0]
-        const ask = this.asks[commodity][0]
-        const clearingCount = Math.min(bid.count, ask.count)
+        const bid: Offer = this.bids[commodity][0]
+        const ask: Offer = this.asks[commodity][0]
         const clearingPrice = average(bid.price, ask.price)
+        const maxCount = Math.floor(Math.max(bid.agent.currency, 0) / clearingPrice)
+        const clearingCount = Math.min(Math.min(bid.count, ask.count), maxCount)
+
+        if(maxCount == 0) {
+          this.bids[commodity].shift()
+          bid.status = "rejected"
+          bid.agent.resolveOffer(bid)
+          this.asks[commodity].shift()
+          ask.status = "rejected"
+          ask.agent.resolveOffer(ask)
+          continue
+        }
 
         if (clearingCount > 0) {
           bid.count -= clearingCount
           ask.count -= clearingCount
-          ask.agent.inventory[ask.commodity] -= clearingCount
-          bid.agent.inventory[bid.commodity] += clearingCount
+          ask.agent.inventoryCurrent[ask.commodity] -= clearingCount
+          bid.agent.inventoryCurrent[bid.commodity] += clearingCount
           bid.agent.currency -= clearingCount * clearingPrice
           ask.agent.currency += clearingCount * clearingPrice
           acceptedOffers.push({

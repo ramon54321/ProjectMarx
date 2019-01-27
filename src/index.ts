@@ -1,5 +1,5 @@
 import { Renderer } from './Renderer' 
-import { Agent, Farmer, Lumberjack, Miner } from './Agent'
+import { Agent, Farmer, Lumberjack, Miner, Blacksmith } from './Agent'
 import { AuctionHouse } from './AuctionHouse';
 
 export function average(a: number, b: number) {
@@ -64,10 +64,20 @@ export class World {
     this.auctionHouse.tickMarket()
     this.tickWorld()
     this.renderer.tick()
+    this.auctionHouse.tickResolveOffers()
   }
 
   tickPopulation() {
-    if (this.tickCount <= 20) {
+    this.agents.forEach(agent => {
+      if (agent.currency <= 0) {
+        const index = this.agents.indexOf(agent)
+        if (index != -1) {
+          this.agents.splice(index, 1)
+          this.agents.unshift(new PROFESSION_CONSTRUCTOR[Math.floor(Math.random() * PROFESSION_CONSTRUCTOR.length)](this))
+        }
+      }
+    })
+    if (this.tickCount <= 120) {
       this.agents.unshift(new PROFESSION_CONSTRUCTOR[Math.floor(Math.random() * PROFESSION_CONSTRUCTOR.length)](this))
     }
   }
@@ -79,96 +89,15 @@ export class World {
     }
   }
 
-  // updateUI() {
-  //   const infoElement: HTMLElement = document.getElementById("info")
-  //   infoElement.innerHTML = `
-  //   <table>
-  //     <tr>
-  //       <th>Commodity</th>
-  //       <th>Bank</th>
-  //       <th>Agents</th>
-  //       <th>Farmers</th>
-  //       <th>Lumberjacks</th>
-  //       <th>Miners</th>
-  //     </tr>
-  //     <tr>
-  //       <td>Currency</td>
-  //       <td>${this.reserveBank.toFixed(0)}</td>
-  //       <td>${this.agents.reduce((acc, agent) => acc + agent.currency, 0).toFixed(0)}</td>
-  //       <td>${(this.totalCurrency["farmer"] / this.agentTypeCount["farmer"]).toFixed(0)}</td>
-  //       <td>${(this.totalCurrency["lumberjack"] / this.agentTypeCount["lumberjack"]).toFixed(0)}</td>
-  //       <td>${(this.totalCurrency["miner"] / this.agentTypeCount["miner"]).toFixed(0)}</td>
-  //     </tr>
-  //     <tr>
-  //       <td>Food</td>
-  //       <td>${this.agents.reduce((acc, agent) => acc + agent.inventory["food"], 0).toFixed(0)}</td>
-  //     </tr>
-  //     <tr>
-  //       <td>Wood</td>
-  //       <td>${this.agents.reduce((acc, agent) => acc + agent.inventory["wood"], 0).toFixed(0)}</td>
-  //     </tr>
-  //     <tr>
-  //       <td>Iron</td>
-  //       <td>${this.agents.reduce((acc, agent) => acc + agent.inventory["iron"], 0).toFixed(0)}</td>
-  //     </tr>
-  //   </table>
-  //   <table>
-  //     <tr>
-  //       <th>Agent</th>
-  //       <th>Currency</th>
-  //       <th>&nbsp;&nbsp;&nbsp;&nbsp;</th>
-  //       <th>Food</th>
-  //       <th>Desired</th>
-  //       <th>Low</th>
-  //       <th>High</th>
-  //       <th>&nbsp;&nbsp;&nbsp;&nbsp;</th>
-  //       <th>Wood</th>
-  //       <th>Desired</th>
-  //       <th>Low</th>
-  //       <th>High</th>
-  //       <th>&nbsp;&nbsp;&nbsp;&nbsp;</th>
-  //       <th>Iron</th>
-  //       <th>Desired</th>
-  //       <th>Low</th>
-  //       <th>High</th>
-  //     </tr>
-  //     ${this.agents.sort((a, b) => a.type.toUpperCase() < b.type.toUpperCase() ? -1 : 1).map(agent => `<tr>
-  //     <td>${agent.type}</td>
-  //     <td>${agent.currency.toFixed(1)}</td>
-  //     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
-  //     <td>${agent.inventory["food"].toFixed(1)}</td>
-  //     <td>${agent.desired["food"].toFixed(1)}</td>
-  //     <td>${agent.askPriceLow["food"].toFixed(1)}</td>
-  //     <td>${agent.askPriceHigh["food"].toFixed(1)}</td>
-  //     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
-  //     <td>${agent.inventory["wood"].toFixed(1)}</td>
-  //     <td>${agent.desired["wood"].toFixed(1)}</td>
-  //     <td>${agent.askPriceLow["wood"].toFixed(1)}</td>
-  //     <td>${agent.askPriceHigh["wood"].toFixed(1)}</td>
-  //     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
-  //     <td>${agent.inventory["iron"].toFixed(1)}</td>
-  //     <td>${agent.desired["iron"].toFixed(1)}</td>
-  //     <td>${agent.askPriceLow["iron"].toFixed(1)}</td>
-  //     <td>${agent.askPriceHigh["iron"].toFixed(1)}</td>
-  //     </tr>`).join(" ")}
-  //   </table>
-  //   <h4>Bids</h4>
-  //   ${COMMODITIES.map(commodity => `${`<ul>
-  //     ${this.auctionHouse.bids[commodity].map(bid => `<li>${bid.agent.type} Bid ${bid.commodity + " - " + bid.price.toFixed(3) + " - " + bid.count}</li>`).join(" ")}
-  //   </ul>`}`).join(" ")}
-  //   <h4>Asks</h4>
-  //   ${COMMODITIES.map(commodity => `${`<ul>
-  //     ${this.auctionHouse.asks[commodity].map(ask => `<li>${ask.agent.type} Ask ${ask.commodity + " - " + ask.price.toFixed(3) + " - " + ask.count}</li>`).join(" ")}
-  //   </ul>`}`).join(" ")}
-  //   `
-  // }
-
   initUI() {
     const mainElement: HTMLElement = document.getElementById("main")
     mainElement.innerHTML = `
-    <button id="button_step" style="background-color: lightblue; width: 200px; height: 40px;">Step</button>
+      <div class="fixed-box">
+        <button onclick="window.tick()" class="button">Tick</button>
+        <button onclick="window.startTick()" class="button">Start</button>
+        <button onclick="window.stopTick()" class="button">Stop</button>
+      </div>
     `
-    document.getElementById("button_step").addEventListener("click", (e:Event) => this.tick())
   }
 }
 
@@ -180,10 +109,37 @@ export class Commodities {
   }
 }
 
-export const COMMODITIES = ["food", "wood", "iron"]
-export const PROFESSIONS = ["farmer", "lumberjack", "miner"]
-export const PROFESSION_CONSTRUCTOR = [Farmer, Lumberjack, Miner]
+export const COMMODITIES = ["food", "wood", "iron", "tools"]
+export const PROFESSIONS = ["farmer", "lumberjack", "miner", "blacksmith"]
+export const PROFESSION_CONSTRUCTOR = [Farmer, Lumberjack, Miner, Blacksmith]
 
-export type Commodity = "food" | "wood" | "iron"
+export type Commodity = "food" | "wood" | "iron" | "tools"
 
 const world: World = new World()
+world.agents.push(new Farmer(world))
+world.agents.push(new Farmer(world))
+world.agents.push(new Farmer(world))
+world.agents.push(new Farmer(world))
+world.agents.push(new Farmer(world))
+world.agents.push(new Lumberjack(world))
+
+window["showInfo"] = (agentId: string) => {
+  world.renderer.selectAgent(agentId)
+}
+
+window["tick"] = () => {
+  world.tick()
+}
+
+let tickInterval = null
+window["startTick"] = () => {
+  if (!tickInterval) {
+    tickInterval = setInterval(() => world.tick(), 100)
+  }
+}
+window["stopTick"] = () => {
+  if (tickInterval) {
+    clearInterval(tickInterval)
+    tickInterval = null
+  }
+}
